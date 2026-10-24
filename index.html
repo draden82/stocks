@@ -37,10 +37,12 @@ input{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
 textarea{width:100%;height:120px;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:8px;margin-top:10px}
 .vt{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.vt div{border:1px solid var(--ln);border-radius:10px;padding:10px 12px}.vt i{font:normal 12px Figtree;color:var(--mu);display:block}.vt b{font:600 24px Oswald}.vt span{font-size:12px;color:var(--mu)}
+.ck{cursor:pointer}.ck:hover,.ck.sel{border-color:var(--ac)!important;background:#16213a}.rr button{padding:3px 11px;font-size:12px}
 .sc{overflow-x:auto}.sc table td,.sc table th{padding:5px 10px;border-top:1px solid var(--ln);white-space:nowrap}.sc th{font-weight:500;color:var(--mu);text-align:right;font-size:12px}.sc th:first-child,.sc td:first-child{text-align:left}
 </style></head><body>
 <header><div class="t"><div class="bar"></div><div><h1>SPOTLIGHT</h1><p class="sub">Swedish sector indexes · <span id="asof"></span><span id="rst"></span></p></div></div>
-<div><button onclick="refresh(true)">Refresh</button> <button id="bD" class="on">Daily · 1 year</button> <button id="bW">Weekly · 3 years</button></div></header>
+<div><button onclick="refresh(true)">Refresh</button> <button id="bD" class="on">Daily</button> <button id="bW">Weekly</button></div></header>
+<div class="row rr" id="rg" style="margin:0 0 14px"></div>
 <div class="card"><div id="pills"></div><div class="grid"><div id="main"></div><aside id="side"></aside></div></div>
 <div class="card" id="val"></div><div class="card" id="ed"></div>
 <script>
@@ -61,7 +63,8 @@ for(let i=1;i<n;i++)mk.push(mk[i-1]*(1+.0003+.008*g()*.6));
 const prices={},sOf={};for(const c in DEF)DEF[c][1].split(' ').forEach(t=>sOf[t+'.ST']=c);EXTRA.forEach(t=>sOf[t+'.ST']=null);
 for(const t in sOf){let p=40+r()*400;const b=.8+r()*.6,o=[p];for(let i=1;i<n;i++){p*=1+b*(mk[i]/mk[i-1]-1)+(sOf[t]?sec[sOf[t]][i-1]:0)+.011*g()*.6;o.push(+p.toFixed(2))}prices[t]=o}
 const meta={};for(const t in prices)meta[t]={mcap:(20+r()*900)*1e9,pe:8+r()*28,fpe:7+r()*24,pb:.8+r()*5,eve:5+r()*16,evs:.8+r()*6,dy:r()*.05,roe:.05+r()*.2,om:.05+r()*.3,rg:-.03+r()*.2,de:.2+r()*1.2};
-return{dates,prices,meta,benchmark:mk.map(v=>+(v*2000).toFixed(2)),demo:1}}
+const hd=dates.filter((_,i)=>i%5==4),hv={};for(const t in meta){const ph=r()*6;hv[t]={};for(const k in meta[t])if(k!='mcap')hv[t][k]=hd.map((_,j)=>+(meta[t][k]*(1+.3*Math.sin(j/35+ph)+.03*g())).toFixed(4))}
+return{dates,prices,meta,hist:{dates:hd,v:hv},benchmark:mk.map(v=>+(v*2000).toFixed(2)),demo:1}}
 DATA=demo();
 // ---- maths
 const sma=(a,n)=>{const o=[];let s=0,c=0;a.forEach((v,i)=>{if(v==null){o.push(null);return}s+=v;c++;if(i>=n&&a[i-n]!=null){s-=a[i-n];c--}o.push(i>=n-1&&c==n?s/n:null)});return o};
@@ -77,24 +80,24 @@ return{P,c,f,m,s,st,rs,hi:Math.max(...c.slice(-P.h)),lo:Math.min(...c.slice(-P.h
 const pc=v=>(v>=0?'+':'')+v.toFixed(1)+'%',cl=v=>v>=0?'up':'dn',SN=['','Neutral','Advancing','Neutral','Declining'];
 const BAND={1:'transparent',2:'rgba(123,163,255,.13)',3:'rgba(255,255,255,.04)',4:'rgba(255,107,107,.12)'};
 function render(){
- const D=DATA,n=D.dates.length;IDX={};for(const k in CFG)IDX[k]=buildIdx(CFG[k].m,CFG[k].w);
+ const D=DATA,n=D.dates.length;rgUI();IDX={};for(const k in CFG)IDX[k]=buildIdx(CFG[k].m,CFG[k].w);
  if(!CFG[SEL])SEL=Object.keys(CFG)[0];
  const ret=k=>IDX[k][n-1]/IDX[k][n-64]-1,rank=Object.keys(CFG).sort((a,b)=>ret(b)-ret(a)).indexOf(SEL)+1;
  $('#asof').textContent=new Date(D.dates[n-1]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+(D.demo?' · demo data, load prices.json below':'');
  $('#pills').innerHTML=Object.keys(CFG).map(k=>`<button class="${k==SEL?'on':''}" onclick="SEL='${k}';render()"><b>${k}</b>${CFG[k].name}</button>`).join('');
  const c0=IDX[SEL],wi=WK?weekIx():null,pick=a=>wi?wi.map(i=>a[i]):a;
- const A=analyze(pick(c0),pick(D.benchmark),WK),dA=analyze(c0,D.benchmark,false),L=A.c.length-1,V=WK?156:252,s0=L+1-V,Nn=V;
- const dates=pick(D.dates),sl=a=>a.slice(s0);
+ const A=analyze(pick(c0),pick(D.benchmark),WK),dA=analyze(c0,D.benchmark,false),L=A.c.length-1,dates=pick(D.dates),[s0,e0]=rangeIx(dates,L),Nn=e0-s0+1,hl=e0==L?[A.hi,A.lo]:[];WIN=[dates[s0],dates[e0]];
+ const sl=a=>a.slice(s0,e0+1);
  // main chart
  const W=800,H=330,R=40,T=22,B=22,lines=[[sl(A.c),'#fff',2.2,''],[sl(A.f),'#6e9bff',1.4,''],[sl(A.m),'#6e9bff',1.4,'4 3'],[sl(A.s),'#c3ccdc',1.8,'']];
- const all=lines.flatMap(x=>x[0]).concat([A.hi,A.lo]).filter(v=>v!=null),mn=Math.min(...all)*.99,mx=Math.max(...all)*1.01;
+ const all=lines.flatMap(x=>x[0]).concat(hl).filter(v=>v!=null),mn=Math.min(...all)*.99,mx=Math.max(...all)*1.01;
  const X=i=>i*(W-R)/(Nn-1),Y=v=>T+(1-(v-mn)/(mx-mn))*(H-T-B),path=a=>{let d='',p=0;a.forEach((v,i)=>{if(v==null){p=0;return}d+=(p?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1);p=1});return d};
  let g='',st=sl(A.st),a=0;for(let i=1;i<=Nn;i++)if(i==Nn||st[i]!=st[a]){const s=st[a];if(s){g+=`<rect x="${X(a)}" y="0" width="${X(Math.min(i,Nn-1))-X(a)}" height="${H-B}" fill="${BAND[s]}"/>`;if(X(Math.min(i,Nn-1))-X(a)>110)g+=`<text x="${X(a)+6}" y="14" style="fill:#6e9bff">STAGE ${s} · ${SN[s].toUpperCase()}</text>`}a=i}
  for(let j=0;j<5;j++){const v=mn+(mx-mn)*j/4;g+=`<line x1="0" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1f2b44" stroke-width=".6"/><text x="${W-R+6}" y="${Y(v)+3}">${v.toFixed(v>100?0:1)}</text>`}
- [A.hi,A.lo].forEach(v=>g+=`<line x1="0" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#8393ad" stroke-dasharray="3 3" stroke-width=".8"/>`);
- let pm='';sl(dates).forEach((d,i)=>{const m=d.slice(5,7);if(m!=pm&&i>8&&i<Nn-8)g+=`<text x="${X(i)-8}" y="${H-6}">${new Date(d).toLocaleDateString('en-GB',{month:'short',timeZone:'UTC'})}</text>`;pm=m});
+ hl.forEach(v=>g+=`<line x1="0" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#8393ad" stroke-dasharray="3 3" stroke-width=".8"/>`);
+ let pm='';sl(dates).forEach((d,i)=>{const m=d.slice(5,7),yr=Nn>300;if(m!=pm&&i>8&&i<Nn-8&&(!yr||m=='01'))g+=`<text x="${X(i)-8}" y="${H-6}">${yr?d.slice(0,4):new Date(d).toLocaleDateString('en-GB',{month:'short',timeZone:'UTC'})}</text>`;pm=m});
  lines.forEach(([v,c,w,d])=>g+=`<path d="${path(v)}" fill="none" stroke="${c}" stroke-width="${w}" stroke-dasharray="${d}"/>`);
- g+=`<circle cx="${X(Nn-1)}" cy="${Y(A.c[L])}" r="3.5" fill="#fff"/>`;
+ g+=`<circle cx="${X(Nn-1)}" cy="${Y(A.c[e0])}" r="3.5" fill="#fff"/>`;
  // RS chart
  const rv=sl(A.rs),rf=rv.filter(v=>v!=null),rmn=Math.min(0,...rf),rmx=Math.max(0,...rf),RY=v=>6+(1-(v-rmn)/(rmx-rmn||1))*68;
  let rp='';rv.forEach((v,i)=>{if(v!=null)rp+=(rp?'L':'M')+X(i).toFixed(1)+' '+RY(v).toFixed(1)});
@@ -136,13 +139,27 @@ const MT={pe:['P/E trailing','x',1],fpe:['P/E forward','x',1],pb:['P/B','x',1],e
 const SM={BNK:['pb','fpe','dy','roe'],IND:['eve','fpe','om','dy'],TEC:['evs','fpe','rg','om'],TEL:['eve','dy','pe','de'],HLT:['fpe','evs','rg','om'],_:['fpe','eve','pb','dy']};
 const SW={BNK:'Banks are priced on book value against returns: P/B read with ROE, plus dividend yield.',IND:'Cyclical industrials: EV/EBITDA and forward P/E, with operating margin and yield for quality.',TEC:'Growth-led: EV/Sales and forward P/E against revenue growth and operating margin.',TEL:'Cash-yield sector: EV/EBITDA and dividend yield, with debt/equity for balance-sheet risk.',HLT:'Earnings quality and growth: forward P/E and EV/Sales against growth and margin.',_:'Default set for custom indexes: forward P/E, EV/EBITDA, P/B and dividend yield.'};
 const ok=(k,v)=>v!=null&&isFinite(v)&&!(MT[k][2]&&v<=0),fm=(k,v)=>v==null?'–':MT[k][1]=='x'?v.toFixed(1)+'x':(v*100).toFixed(1)+'%';
-function agg(ts,k,w){let sw=0,sv=0;for(const t of ts){const m=DATA.meta&&DATA.meta[t];if(!m||!ok(k,m[k]))continue;const q=w=='cap'?(m.mcap||0):1;if(!q)continue;sw+=q;sv+=q*(MT[k][2]?1/m[k]:m[k])}return sw?(MT[k][2]?sw/sv:sv/sw):null}
+function agg(ts,k,w,i){let sw=0,sv=0;for(const t of ts){const m=DATA.meta&&DATA.meta[t];if(!m)continue;const v=i==null?m[k]:((DATA.hist&&DATA.hist.v[t]&&DATA.hist.v[t][k])||[])[i];if(!ok(k,v))continue;const q=w=='cap'?(m.mcap||0):1;if(!q)continue;sw+=q;sv+=q*(MT[k][2]?1/v:v)}return sw?(MT[k][2]?sw/sv:sv/sw):null}
 function valuation(){const ms=SM[SEL]||SM._,ts=CFG[SEL].m,w=CFG[SEL].w,all=Object.keys(DATA.meta||{}),el=$('#val');
  if(!all.length){el.innerHTML='<p class="sub">No fundamentals in the loaded data. Run the updated fetch_prices.py and load prices.json.</p>';return}
  const med=k=>{const a=all.map(t=>DATA.meta[t][k]).filter(v=>ok(k,v)).sort((a,b)=>a-b);return a.length?a[a.length>>1]:null};
- el.innerHTML=`<h4 style="margin:0;font:600 18px Oswald">Valuation · ${CFG[SEL].name}</h4><p class="sub">${SW[SEL]||SW._} Sector figures are ${w=='cap'?'market-cap weighted':'equal-weighted'}; multiples use the weighted harmonic mean (total price over total earnings). Compared with the median of all ${all.length} stocks in the data.</p>
- <div class="vt">${ms.map(k=>{const v=agg(ts,k,w),md=med(k);return`<div><i>${MT[k][0]}</i><b>${fm(k,v)}</b><br><span>${v!=null&&md?`universe ${fm(k,md)} · ${pc((v/md-1)*100)}`:'no data'}</span></div>`}).join('')}</div>
- <div class="sc"><table><tr><th>Stock</th><th>Mkt cap, bn</th>${ms.map(k=>`<th>${MT[k][0]}</th>`).join('')}</tr>${ts.map(t=>{const m=DATA.meta[t]||{};return`<tr><td>${t.replace('.ST','')}</td><td>${m.mcap?(m.mcap/1e9).toFixed(0):'–'}</td>${ms.map(k=>`<td>${fm(k,ok(k,m[k])?m[k]:null)}</td>`).join('')}</tr>`}).join('')}</table></div>`}
+ el.innerHTML=`<h4 style="margin:0;font:600 18px Oswald">Valuation · ${CFG[SEL].name}</h4><p class="sub">${SW[SEL]||SW._} Sector figures are ${w=='cap'?'market-cap weighted':'equal-weighted'}; multiples use the weighted harmonic mean (total price over total earnings). Compared with the median of all ${all.length} stocks in the data. Click a tile to see its history.</p>
+ <div class="vt">${ms.map(k=>{const v=agg(ts,k,w),md=med(k);return`<div class="ck${k==HK?' sel':''}" tabindex="0" role="button" onclick="HK=HK=='${k}'?null:'${k}';valuation()" onkeydown="if(event.key=='Enter')this.click()"><i>${MT[k][0]}</i><b>${fm(k,v)}</b><br><span>${v!=null&&md?`universe ${fm(k,md)} · ${pc((v/md-1)*100)}`:'no data'}</span></div>`}).join('')}</div>
+ ${HK&&ms.includes(HK)?vhist(HK,ts,w):''}<div class="sc"><table><tr><th>Stock</th><th>Mkt cap, bn</th>${ms.map(k=>`<th>${MT[k][0]}</th>`).join('')}</tr>${ts.map(t=>{const m=DATA.meta[t]||{};return`<tr><td>${t.replace('.ST','')}</td><td>${m.mcap?(m.mcap/1e9).toFixed(0):'–'}</td>${ms.map(k=>`<td>${fm(k,ok(k,m[k])?m[k]:null)}</td>`).join('')}</tr>`}).join('')}</table></div>`}
+// ---- time range and valuation history
+let RNG={p:'auto',f:'',t:''},WIN=[],HK=null;
+function rangeIx(ds,L){let s=Math.max(0,L+1-(WK?156:252)),e=L;if(RNG.p!='auto'){let f=RNG.f,t=RNG.t||ds[L];if(RNG.p!='custom'){t=ds[L];if(RNG.p=='Max')f='';else{const d=new Date(ds[L]),n=+RNG.p.slice(0,-1);RNG.p.slice(-1)=='M'?d.setUTCMonth(d.getUTCMonth()-n):d.setUTCFullYear(d.getUTCFullYear()-n);f=d.toISOString().slice(0,10)}}
+ s=f?ds.findIndex(d=>d>=f):0;if(s<0)s=0;e=ds.map(d=>d<=t).lastIndexOf(true);if(e<0)e=L;if(e-s<10)s=Math.max(0,e-10)}return[s,e]}
+function rgUI(){$('#rg').innerHTML=['Auto','3M','6M','1Y','3Y','5Y','Max'].map(p=>`<button class="${(RNG.p=='auto'?'Auto':RNG.p)==p?'on':''}" onclick="RNG={p:'${p=='Auto'?'auto':p}',f:'',t:''};render()">${p}</button>`).join('')+` <span class="mu">Custom</span> <input type="date" id="rf1" value="${RNG.p=='custom'?RNG.f:''}" aria-label="From date"> <span class="mu">to</span> <input type="date" id="rt1" value="${RNG.p=='custom'?RNG.t:''}" aria-label="To date"> <button onclick="cr()">Apply</button>`}
+function cr(){const f=$('#rf1').value,t=$('#rt1').value;if(!f&&!t)return;RNG={p:'custom',f,t};render()}
+function vhist(k,ts,w){const H=DATA.hist;if(!H)return'<p class="sub">No history in the loaded data. Run the updated fetch_prices.py and reload.</p>';
+ const f=RNG.p=='auto'?'':WIN[0],t=RNG.p=='auto'?'9':WIN[1],pts=[];H.dates.forEach((d,i)=>{if(d>=f&&d<=t){const v=agg(ts,k,w,i);if(v!=null)pts.push([d,v])}});
+ if(pts.length<3)return'<p class="sub">Not enough history for this metric in the chosen range.</p>';
+ const vs=pts.map(p=>p[1]),so=[...vs].sort((a,b)=>a-b),md=so[so.length>>1],cu=vs[vs.length-1],pr=vs.filter(v=>v<=cu).length/vs.length*100,W=800,Hh=210,R=44,mn=so[0]*.95,mx=so[so.length-1]*1.05,X=i=>i*(W-R)/(pts.length-1),Y=v=>10+(1-(v-mn)/(mx-mn))*(Hh-34);
+ let g='';for(let j=0;j<4;j++){const v=mn+(mx-mn)*j/3;g+=`<line x1="0" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1f2b44" stroke-width=".6"/><text x="${W-R+6}" y="${Y(v)+3}">${fm(k,v)}</text>`}
+ pts.forEach((p,i)=>{if(i&&p[0].slice(0,4)!=pts[i-1][0].slice(0,4))g+=`<text x="${X(i)-10}" y="${Hh-8}">${p[0].slice(0,4)}</text>`});
+ g+=`<line x1="0" x2="${W-R}" y1="${Y(md)}" y2="${Y(md)}" stroke="#ff9f43" stroke-dasharray="4 3" stroke-width=".9"/><path d="${pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p[1]).toFixed(1)).join('')}" fill="none" stroke="#6e9bff" stroke-width="1.8"/><circle cx="${X(pts.length-1)}" cy="${Y(cu)}" r="3.5" fill="#fff"/>`;
+ return`<div style="margin:6px 0 18px;border-top:1px solid var(--ln);padding-top:12px"><b style="font:600 16px Oswald">${MT[k][0]} history · ${CFG[SEL].name}</b><p class="sub">${pts[0][0]} to ${pts[pts.length-1][0]} · now ${fm(k,cu)} · median ${fm(k,md)} (dashed) · range ${fm(k,so[0])} to ${fm(k,so[so.length-1])} · now at the ${pr.toFixed(0)}th percentile of the period. Built from annual reports with a 60-day reporting lag, so it moves in steps.</p><svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${MT[k][0]} history">${g}</svg></div>`}
 // ---- data persistence and refresh
 function setData(j){DATA=j;MSG='';try{localStorage.setItem('spot-data',JSON.stringify(j))}catch(e){}render()}
 async function refresh(manual){try{const r=await fetch('prices.json?'+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();if(!j.dates)throw 0;setData(j);$('#rst').textContent=' · refreshed '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}catch(e){if(manual){MSG='No prices.json is served next to this page. Host both together for automatic refresh, or use Load price data.';editor()}}}
