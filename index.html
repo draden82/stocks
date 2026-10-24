@@ -38,33 +38,38 @@ input{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:
 textarea{width:100%;height:120px;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:8px;margin-top:10px}
 .vt{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.vt div{border:1px solid var(--ln);border-radius:10px;padding:10px 12px}.vt i{font:normal 12px Figtree;color:var(--mu);display:block}.vt b{font:600 24px Oswald}.vt span{font-size:12px;color:var(--mu)}
 .ck{cursor:pointer}.ck:hover,.ck.sel{border-color:var(--ac)!important;background:#16213a}.rr button{padding:3px 11px;font-size:12px}
+.fb{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;position:relative}.dd{position:relative}.dd>button{border-radius:99px;padding:6px 16px}.dp{position:absolute;top:38px;left:0;z-index:20;background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:8px 6px;min-width:280px;max-height:360px;overflow:auto;box-shadow:0 8px 24px #0009}.dp label{display:flex;gap:10px;align-items:center;padding:6px 10px;cursor:pointer;border-radius:8px}.dp label:hover{background:#16213a}.dp label span{margin-left:auto;color:var(--mu)}.dp input{accent-color:#3ddc97;width:16px;height:16px;padding:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}@media(max-width:700px){.two{grid-template-columns:1fr}}.ph{font:600 18px Oswald;margin:18px 0 6px}.nw{padding:10px 0;border-top:1px solid var(--ln)}.nw a{color:var(--tx);font-weight:600;text-decoration:none}.nw a:hover{text-decoration:underline}
+.tb{display:flex;gap:4px;border-bottom:1px solid var(--ln);margin-bottom:16px;overflow-x:auto}.tb button{background:none;border:0;border-bottom:2px solid transparent;border-radius:0;padding:8px 16px;color:var(--mu);white-space:nowrap}.tb button.on{background:none;color:var(--tx);border-bottom-color:var(--up)}
+.pn{display:none}body[data-tab=spot] .t-spot,body[data-tab=ov] .t-ov,body[data-tab=nw] .t-nw,body[data-tab=kf] .t-kf,body[data-tab=an] .t-an{display:block}body[data-tab=spot] .grid.t-spot{display:grid}
+.mr{overflow-x:auto}.mr table{border-collapse:separate;border-spacing:4px;min-width:640px}.mr td,.mr th{padding:7px 2px;text-align:center!important;border-radius:6px;font-size:12px}.mr th{color:var(--mu);font-weight:500}.mr td{font-weight:600}
 .sc{overflow-x:auto}.sc table td,.sc table th{padding:5px 10px;border-top:1px solid var(--ln);white-space:nowrap}.sc th{font-weight:500;color:var(--mu);text-align:right;font-size:12px}.sc th:first-child,.sc td:first-child{text-align:left}
-</style></head><body>
+</style></head><body data-tab="spot">
 <header><div class="t"><div class="bar"></div><div><h1>SPOTLIGHT</h1><p class="sub">Swedish sector indexes · <span id="asof"></span><span id="rst"></span></p></div></div>
 <div><button onclick="refresh(true)">Refresh</button> <button id="bD" class="on">Daily</button> <button id="bW">Weekly</button></div></header>
 <div class="row rr" id="rg" style="margin:0 0 14px"></div>
-<div class="card"><div id="pills"></div><div class="grid"><div id="main"></div><aside id="side"></aside></div></div>
-<div class="card" id="val"></div><div class="card" id="ed"></div>
+<div class="card"><div id="fb" class="fb"></div><div id="pills"></div><div id="tabs" class="tb"></div><div class="grid pn t-spot"><div id="main"></div><aside id="side"></aside></div><div class="pn t-ov" id="ov"></div><div class="pn t-nw" id="nw"></div><div class="pn t-kf" id="kf"></div><div class="pn t-an" id="an"></div></div>
+<div class="card pn t-spot t-kf" id="val"></div><div class="card pn t-spot" id="ed"></div>
 <script>
 const $=s=>document.querySelector(s);
 const DEF={BNK:['Banks','SEB-A SHB-A SWED-A NDA-SE'],IND:['Industrial Goods & Services','ATCO-A SAND VOLV-B ALFA EPI-A ABB'],TEC:['Technology','ERIC-B HEXA-B EVO SINCH'],TEL:['Telecommunications','TELIA TEL2-B'],HLT:['Health Care','GETI-B SOBI ELEK-B AZN']};
-const EXTRA='INVE-B ESSITY-B HM-B ASSA-B SKF-B BOL'.split(' ');
+const UNIJ={"sectors": {"FI": "Financials", "IN": "Industrials", "HC": "Health Care", "TE": "Technology", "TL": "Telecom", "CS": "Consumer Goods & Services", "MA": "Materials", "RE": "Real Estate", "EN": "Energy"}, "stocks": ["SEB-A|SEB A|L|FI", "SHB-A|Handelsbanken A|L|FI", "SWED-A|Swedbank A|L|FI", "NDA-SE|Nordea|L|FI", "INVE-B|Investor B|L|FI", "INDU-C|Industrivärden C|L|FI", "LUND-B|Lundbergs B|L|FI", "LATO-B|Latour B|L|FI", "KINV-B|Kinnevik B|L|FI", "EQT|EQT|L|FI", "AZA|Avanza|L|FI", "GETI-B|Getinge B|L|HC", "AZN|AstraZeneca|L|HC", "SOBI|Sobi|L|HC", "ELEK-B|Elekta B|L|HC", "VITR|Vitrolife|M|HC", "MCOV-B|Medicover B|M|HC", "ATCO-A|Atlas Copco A|L|IN", "ATCO-B|Atlas Copco B|L|IN", "SAND|Sandvik|L|IN", "VOLV-B|Volvo B|L|IN", "ALFA|Alfa Laval|L|IN", "EPI-A|Epiroc A|L|IN", "ASSA-B|Assa Abloy B|L|IN", "SKF-B|SKF B|L|IN", "NIBE-B|NIBE B|L|IN", "SAAB-B|Saab B|L|IN", "ABB|ABB|L|IN", "INDT|Indutrade|L|IN", "LIFCO-B|Lifco B|L|IN", "ADDT-B|Addtech B|L|IN", "NCC-B|NCC B|M|IN", "PEAB-B|Peab B|L|IN", "SKA-B|Skanska B|L|IN", "BEIJ-B|Beijer Ref B|L|IN", "TREL-B|Trelleborg B|L|IN", "SWEC-B|Sweco B|L|IN", "HUSQ-B|Husqvarna B|L|IN", "LAGR-B|Lagercrantz B|L|IN", "ERIC-B|Ericsson B|L|TE", "HEXA-B|Hexagon B|L|TE", "SINCH|Sinch|L|TE", "FNOX|Fortnox|L|TE", "SECT-B|Sectra B|L|TE", "TRUE-B|Truecaller B|M|TE", "EVO|Evolution|L|CS", "HM-B|H&M B|L|CS", "ESSITY-B|Essity B|L|CS", "ELUX-B|Electrolux B|L|CS", "EMBRAC-B|Embracer B|L|CS", "AXFO|Axfood|L|CS", "CLAS-B|Clas Ohlson B|M|CS", "THULE|Thule|L|CS", "DOM|Dometic|L|CS", "AAK|AAK|L|CS", "BOL|Boliden|L|MA", "SSAB-B|SSAB B|L|MA", "SCA-B|SCA B|L|MA", "HOLM-B|Holmen B|L|MA", "BILL|Billerud|L|MA", "LUMI|Lundin Mining|L|MA", "STE-R|Stora Enso R|L|MA", "TELIA|Telia|L|TL", "TEL2-B|Tele2 B|L|TL", "BALD-B|Balder B|L|RE", "CAST|Castellum|L|RE", "FABG|Fabege|M|RE", "WIHL|Wihlborgs|M|RE", "WALL-B|Wallenstam B|M|RE", "HUFV-A|Hufvudstaden A|M|RE", "SAGA-B|Sagax B|L|RE", "SBB-B|SBB B|L|RE", "CATE|Catena|M|RE", "NP3|NP3 Fastigheter|M|RE", "IPCO|International Petroleum|M|EN", "ORRON|Orrön Energy|M|EN"]};const SECN=UNIJ.sectors;
 const defCfg=()=>{const o={};for(const k in DEF)o[k]={name:DEF[k][0],m:DEF[k][1].split(' ').map(t=>t+'.ST')};return o};
 let DATA,CFG,SEL='BNK',WK=false,IDX={},MSG='';
-try{CFG=JSON.parse(localStorage.getItem('spot-cfg'))}catch(e){}
-if(!CFG||!Object.keys(CFG).length)CFG=defCfg();
-SEL=Object.keys(CFG)[0];
-const save=()=>{try{localStorage.setItem('spot-cfg',JSON.stringify(CFG))}catch(e){}};
+let ST={idx:['L','M'],sec:Object.keys(SECN),ov:{},cu:{},w:{}};try{const s=JSON.parse(localStorage.getItem('spot-st'));if(s&&s.sec)ST=s}catch(e){}
+CFG={};
+const save=()=>{try{localStorage.setItem('spot-st',JSON.stringify(ST))}catch(e){}};
 // ---- demo data (replace by loading prices.json)
 function demo(){let a=1234567;const r=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296},g=()=>(r()+r()+r()-1.5)*2;
 const dates=[];let d=new Date('2026-10-19T00:00:00Z');while(dates.length<1000){if(d.getUTCDay()%6)dates.unshift(d.toISOString().slice(0,10));d=new Date(d-864e5)}
-const n=dates.length,mk=[1],sec={};let k=0;for(const c in DEF){sec[c]=[];for(let i=1;i<n;i++)sec[c].push(.0007*Math.sin(6.28*i/(260+k*70)+k)+.007*g()*.6);k++}
+const n=dates.length,mk=[1],sec={};let k=0;for(const c in SECN){sec[c]=[];for(let i=1;i<n;i++)sec[c].push(.0007*Math.sin(6.28*i/(260+k*70)+k)+.007*g()*.6);k++}
 for(let i=1;i<n;i++)mk.push(mk[i-1]*(1+.0003+.008*g()*.6));
-const prices={},sOf={};for(const c in DEF)DEF[c][1].split(' ').forEach(t=>sOf[t+'.ST']=c);EXTRA.forEach(t=>sOf[t+'.ST']=null);
+const prices={},sOf={};UNIJ.stocks.forEach(s=>{const a=s.split('|');sOf[a[0]+'.ST']=a[3]});
 for(const t in sOf){let p=40+r()*400;const b=.8+r()*.6,o=[p];for(let i=1;i<n;i++){p*=1+b*(mk[i]/mk[i-1]-1)+(sOf[t]?sec[sOf[t]][i-1]:0)+.011*g()*.6;o.push(+p.toFixed(2))}prices[t]=o}
 const meta={};for(const t in prices)meta[t]={mcap:(20+r()*900)*1e9,pe:8+r()*28,fpe:7+r()*24,pb:.8+r()*5,eve:5+r()*16,evs:.8+r()*6,dy:r()*.05,roe:.05+r()*.2,om:.05+r()*.3,rg:-.03+r()*.2,de:.2+r()*1.2};
 const hd=dates.filter((_,i)=>i%5==4),hv={};for(const t in meta){const ph=r()*6;hv[t]={};for(const k in meta[t])if(k!='mcap')hv[t][k]=hd.map((_,j)=>+(meta[t][k]*(1+.3*Math.sin(j/35+ph)+.03*g())).toFixed(4))}
-return{dates,prices,meta,hist:{dates:hd,v:hv},benchmark:mk.map(v=>+(v*2000).toFixed(2)),demo:1}}
+const ext={},yy=[2022,2023,2024,2025],ed=[];for(let y=2023;y<=2026;y++)[1,4,7,10].forEach(m=>{if(y<2026||m<10)ed.push(`${y}-${String(m).padStart(2,'0')}-2${r()*5|0}`)});for(const t in prices){const b=5e10+r()*3e11,F=m=>yy.map((_,i)=>+(b*m*(1+.05*i+.03*g())).toFixed(0)),q=prices[t][n-1];ext[t]={nx:'2027-01-'+(10+(r()*18|0)),rp:['2026-10-22','2026-07-17'],eq:ed.map(d=>({d,sp:+((r()-.38)*14).toFixed(1)})),rq:ed.slice(-4).map(d=>({d,sp:+((r()-.4)*6).toFixed(1)})),dv:{a:+(r()*20).toFixed(2),d:'2026-04-01'},nw:[{h:'Demo headline about '+t.replace('.ST',''),p:'Demo',d:'2026-10-2'+(r()*4|0),u:'#'}],rec:{strongBuy:r()*4|0,buy:r()*6|0,hold:r()*8|0,sell:r()*3|0,strongSell:0},pt:{current:q,high:q*1.35,low:q*.85,mean:q*(1.02+r()*.2)},ins:{b:r()*5e7,s:r()*1e8,nb:r()*6|0,ns:r()*9|0},fin:{y:yy,rev:F(1),ni:F(.18),oi:F(.24),eb:F(.3),as:F(4),li:F(3.3),eq:F(.7),nd:F(.6)}}}
+return{dates,prices,meta,ext,hist:{dates:hd,v:hv},benchmark:mk.map(v=>+(v*2000).toFixed(2)),demo:1}}
 DATA=demo();
 // ---- maths
 const sma=(a,n)=>{const o=[];let s=0,c=0;a.forEach((v,i)=>{if(v==null){o.push(null);return}s+=v;c++;if(i>=n&&a[i-n]!=null){s-=a[i-n];c--}o.push(i>=n-1&&c==n?s/n:null)});return o};
@@ -80,7 +85,7 @@ return{P,c,f,m,s,st,rs,hi:Math.max(...c.slice(-P.h)),lo:Math.min(...c.slice(-P.h
 const pc=v=>(v>=0?'+':'')+v.toFixed(1)+'%',cl=v=>v>=0?'up':'dn',SN=['','Neutral','Advancing','Neutral','Declining'];
 const BAND={1:'transparent',2:'rgba(123,163,255,.13)',3:'rgba(255,255,255,.04)',4:'rgba(255,107,107,.12)'};
 function render(){
- const D=DATA,n=D.dates.length;rgUI();IDX={};for(const k in CFG)IDX[k]=buildIdx(CFG[k].m,CFG[k].w);
+ rebuild();fbUI();const D=DATA,n=D.dates.length;rgUI();if(!SEL){$('#main').innerHTML='<p class="mu">Select at least one sector in the Sectors filter above.</p>';['#side','#pills','#val','#ed'].forEach(s=>$(s).innerHTML='');return}IDX={};for(const k in CFG)IDX[k]=buildIdx(CFG[k].m,CFG[k].w);
  if(!CFG[SEL])SEL=Object.keys(CFG)[0];
  const ret=k=>IDX[k][n-1]/IDX[k][n-64]-1,rank=Object.keys(CFG).sort((a,b)=>ret(b)-ret(a)).indexOf(SEL)+1;
  $('#asof').textContent=new Date(D.dates[n-1]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+(D.demo?' · demo data, load prices.json below':'');
@@ -96,7 +101,7 @@ function render(){
  for(let j=0;j<5;j++){const v=mn+(mx-mn)*j/4;g+=`<line x1="0" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#1f2b44" stroke-width=".6"/><text x="${W-R+6}" y="${Y(v)+3}">${v.toFixed(v>100?0:1)}</text>`}
  hl.forEach(v=>g+=`<line x1="0" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#8393ad" stroke-dasharray="3 3" stroke-width=".8"/>`);
  let pm='';sl(dates).forEach((d,i)=>{const m=d.slice(5,7),yr=Nn>300;if(m!=pm&&i>8&&i<Nn-8&&(!yr||m=='01'))g+=`<text x="${X(i)-8}" y="${H-6}">${yr?d.slice(0,4):new Date(d).toLocaleDateString('en-GB',{month:'short',timeZone:'UTC'})}</text>`;pm=m});
- lines.forEach(([v,c,w,d])=>g+=`<path d="${path(v)}" fill="none" stroke="${c}" stroke-width="${w}" stroke-dasharray="${d}"/>`);
+ g+=qm(sl(dates),X,H-B-8);lines.forEach(([v,c,w,d])=>g+=`<path d="${path(v)}" fill="none" stroke="${c}" stroke-width="${w}" stroke-dasharray="${d}"/>`);
  g+=`<circle cx="${X(Nn-1)}" cy="${Y(A.c[e0])}" r="3.5" fill="#fff"/>`;
  // RS chart
  const rv=sl(A.rs),rf=rv.filter(v=>v!=null),rmn=Math.min(0,...rf),rmx=Math.max(0,...rf),RY=v=>6+(1-(v-rmn)/(rmx-rmn||1))*68;
@@ -105,9 +110,9 @@ function render(){
  $('#main').innerHTML=`<div class="top"><div><h2>${CFG[SEL].name}</h2><p class="sub">${SEL} · ${CFG[SEL].m.length} stocks, ${CFG[SEL].w=='cap'?'market-cap weighted':'equal-weight'} · momentum rank ${rank} of ${Object.keys(CFG).length}</p></div><div><div class="px">${c0[n-1].toFixed(2)}</div><div class="${cl(c0[n-1]/c0[n-2]-1)}" style="text-align:right;font-size:12px">${pc((c0[n-1]/c0[n-2]-1)*100)} on ${new Date(D.dates[n-1]).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div></div></div>
  <div class="st">${[['1W',5],['1M',21],['3M',63],['1Y',252]].map(([l,k])=>{const v=(c0[n-1]/c0[n-1-k]-1)*100;return`<div><i>${l}</i><span class="${cl(v)}">${pc(v)}</span></div>`}).join('')}<div><i>VS 52W CLOSING HIGH</i><span class="${cl(-1)}">${pc((c0[n-1]/Math.max(...c0.slice(-252))-1)*100)}</span></div></div>
  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Price and moving averages">${g}</svg>
- <p class="sub" style="margin:10px 0 2px">MANSFIELD RS · ${WK?'WEEKLY':'DAILY'} · ${A.P.s}-${WK?'WEEK':'DAY'} ZERO LINE · VS OMXS30 BENCHMARK <span class="${cl(rl)}" style="float:right">${pc(rl).replace('%','')} · ${rl>=0?'outperforming':'underperforming'}</span></p>
+ <p class="sub" style="margin:10px 0 2px">MANSFIELD RS · ${WK?'WEEKLY':'DAILY'} · ${A.P.s}-${WK?'WEEK':'DAY'} ZERO LINE · VS OMXS30 BENCHMARK <span class="${cl(rl)}" style="float:right">${pc(rl).replace('%','')} · ${rl>=0?'outperforming':'underperforming'} · as of ${dates[e0]}</span></p>
  <svg viewBox="0 0 ${W} 80"><line x1="0" x2="${W-R}" y1="${RY(0)}" y2="${RY(0)}" stroke="#8393ad" stroke-dasharray="3 3" stroke-width=".8"/><path d="${rp}" fill="none" stroke="#6e9bff" stroke-width="1.4"/></svg>
- <p class="sub">— price &nbsp;<span style="color:#6e9bff">— ${A.P.f}-${pr} · - - ${A.P.m}-${WK?'week':'day (30-week)'}</span> &nbsp;<span style="color:#c3ccdc">— ${A.P.s}-${pr}</span> &nbsp;··· 13-week closing range</p>`;
+ <p class="sub">— price &nbsp;<span style="color:#6e9bff">— ${A.P.f}-${pr} · - - ${A.P.m}-${WK?'week':'day (30-week)'}</span> &nbsp;<span style="color:#c3ccdc">— ${A.P.s}-${pr}</span> &nbsp;··· 13-week closing range</p>${mret(c0,D.dates)}${qgrid()}`;
  // side
  const run=(arr)=>{let k=arr.length-1;while(k>0&&arr[k-1]==arr[k])k--;return arr.length-k},sD=dA.st[n-1],sW=analyze(pick(c0),pick(D.benchmark),true).st,wk=weekIx(),sWk=analyze(wk.map(i=>c0[i]),wk.map(i=>D.benchmark[i]),true),cur=A.st[L];
  let br=0;for(let i=Math.max(1,L-39);i<=L;i++)if(A.c[i]<A.f[i]&&A.c[i-1]>=A.f[i-1])br++;
@@ -119,25 +124,25 @@ function render(){
  <h4>Levels that decide the next stage</h4><table>${lv.map(([l,v])=>`<tr class="${l=='Now'?'now':''}"><td>${l}</td><td>${v.toFixed(2)}</td><td class="${cl(v-A.c[L])}">${l=='Now'?'':pc((v/A.c[L]-1)*100)}</td></tr>`).join('')}</table>
  <p class="mu" style="font-size:13px">The ${A.P.s}-${pr}: ${dir}, ${pc(s2*100).replace('%','')}% over 40 ${pr}s (flat = within ±0.5%).</p>
  <h4>Mansfield RS · ${WK?'weekly':'daily'}</h4><div class="big ${cl(rl)}">${pc(rl).replace('%','')}</div><p class="mu" style="font-size:13px">Sector index against the OMXS30 benchmark, compared with its own ${A.P.s}-${pr} average. Above zero means the sector is outperforming Sweden.</p>`;
- valuation();editor()}
+ valuation();panes();editor()}
 function editor(){const m=CFG[SEL].m,av=Object.keys(DATA.prices).filter(t=>!m.includes(t));
  $('#ed').innerHTML=`<h4 style="margin:0 0 4px;font:600 18px Oswald">Edit ${CFG[SEL].name} <span class="mu" style="font:12px Figtree">(${m.length} stocks)</span></h4><p class="sub">Add or remove stocks; the index and all signals recompute instantly. Changes are saved in this browser.</p>
  <div style="margin-top:10px">${m.map(t=>`<span class="chip">${t.replace('.ST','')}<button aria-label="Remove ${t}" onclick="rm('${t}')">×</button></span>`).join('')}</div>
  <div class="row"><input id="tk" list="dl" placeholder="Add ticker, e.g. HM-B.ST"><datalist id="dl">${av.map(t=>`<option value="${t}">`).join('')}</datalist><button onclick="add()">Add stock</button><span id="msg" class="mu">${MSG}</span></div>
- <div class="row"><input id="nc" size="5" placeholder="Code"><input id="nn" placeholder="New index name"><button onclick="mk()">New index</button><button onclick="CFG[SEL].w=CFG[SEL].w=='cap'?'eq':'cap';save();render()">Weighting: ${CFG[SEL].w=='cap'?'market cap':'equal'}</button><button onclick="del()">Delete this index</button>${CFG[SEL].w=='cap'&&m.some(t=>!mc(t))?'<span class="dn">Some stocks have no market cap and get zero weight.</span>':''}<button onclick="CFG=defCfg();SEL='BNK';save();render()">Reset to defaults</button></div>
+ <div class="row"><input id="nc" size="5" placeholder="Code"><input id="nn" placeholder="New index name"><button onclick="mk()">New index</button><button onclick="ST.w[SEL]=CFG[SEL].w=='cap'?'eq':'cap';save();render()">Weighting: ${CFG[SEL].w=='cap'?'market cap':'equal'}</button><button onclick="del()">Delete this index</button>${CFG[SEL].w=='cap'&&m.some(t=>!mc(t))?'<span class="dn">Some stocks have no market cap and get zero weight.</span>':''}<button onclick="resetAll()">Reset to defaults</button></div>
  <div class="row"><label class="mu">Load price data <input type="file" accept=".json" onchange="ld(this.files[0])"></label><button onclick="cj()">Show config JSON</button></div><div id="cj"></div>`}
-function rm(t){CFG[SEL].m=CFG[SEL].m.filter(x=>x!=t);MSG='';save();render()}
-function add(){const t=$('#tk').value.trim().toUpperCase();if(!DATA.prices[t]){MSG='Not in the loaded price data. Add it to fetch_prices.py and reload.';editor();return}if(!CFG[SEL].m.includes(t))CFG[SEL].m.push(t);MSG='';save();render()}
-function mk(){const c=$('#nc').value.trim().toUpperCase(),n=$('#nn').value.trim();if(!c||!n||CFG[c])return;CFG[c]={name:n,m:[]};SEL=c;save();render()}
-function del(){if(Object.keys(CFG).length<2)return;delete CFG[SEL];SEL=Object.keys(CFG)[0];save();render()}
+function rm(t){if(CFG[SEL].custom)ST.cu[SEL].m=ST.cu[SEL].m.filter(x=>x!=t);else{const o=ST.ov[SEL]=ST.ov[SEL]||{add:[],rm:[]};if(o.add.includes(t))o.add=o.add.filter(x=>x!=t);else o.rm.push(t)}MSG='';save();render()}
+function add(){const t=$('#tk').value.trim().toUpperCase();if(!DATA.prices[t]){MSG='Not in the loaded price data. Add it to universe.json and reload.';editor();return}if(!CFG[SEL].m.includes(t)){if(CFG[SEL].custom)ST.cu[SEL].m.push(t);else{const o=ST.ov[SEL]=ST.ov[SEL]||{add:[],rm:[]};if(o.rm.includes(t))o.rm=o.rm.filter(x=>x!=t);else o.add.push(t)}}MSG='';save();render()}
+function mk(){const c=$('#nc').value.trim().toUpperCase(),n=$('#nn').value.trim();if(!c||!n||CFG[c])return;ST.cu[c]={name:n,m:[]};SEL=c;save();render()}
+function del(){if(CFG[SEL].custom)delete ST.cu[SEL];else ST.sec=ST.sec.filter(c=>c!=SEL);SEL=null;save();render()}
 function cj(){$('#cj').innerHTML=`<textarea readonly>${JSON.stringify(CFG,null,1)}</textarea>`}
 function ld(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.dates||!j.prices||!j.benchmark)throw 0;setData(j)}catch(e){MSG='Could not read that file. Expected dates, prices and benchmark.';editor()}};r.readAsText(f)}
 $('#bD').onclick=()=>{WK=false;$('#bD').className='on';$('#bW').className='';render()};
 $('#bW').onclick=()=>{WK=true;$('#bW').className='on';$('#bD').className='';render()};
 // ---- valuation
 const MT={pe:['P/E trailing','x',1],fpe:['P/E forward','x',1],pb:['P/B','x',1],eve:['EV/EBITDA','x',1],evs:['EV/Sales','x',1],dy:['Dividend yield','%',0],roe:['ROE','%',0],om:['Operating margin','%',0],rg:['Revenue growth','%',0],de:['Debt/Equity','%',0]};
-const SM={BNK:['pb','fpe','dy','roe'],IND:['eve','fpe','om','dy'],TEC:['evs','fpe','rg','om'],TEL:['eve','dy','pe','de'],HLT:['fpe','evs','rg','om'],_:['fpe','eve','pb','dy']};
-const SW={BNK:'Banks are priced on book value against returns: P/B read with ROE, plus dividend yield.',IND:'Cyclical industrials: EV/EBITDA and forward P/E, with operating margin and yield for quality.',TEC:'Growth-led: EV/Sales and forward P/E against revenue growth and operating margin.',TEL:'Cash-yield sector: EV/EBITDA and dividend yield, with debt/equity for balance-sheet risk.',HLT:'Earnings quality and growth: forward P/E and EV/Sales against growth and margin.',_:'Default set for custom indexes: forward P/E, EV/EBITDA, P/B and dividend yield.'};
+const SM={BNK:['pb','fpe','dy','roe'],IND:['eve','fpe','om','dy'],TEC:['evs','fpe','rg','om'],TEL:['eve','dy','pe','de'],HLT:['fpe','evs','rg','om'],FI:['pb','fpe','dy','roe'],IN:['eve','fpe','om','dy'],TE:['evs','fpe','rg','om'],TL:['eve','dy','pe','de'],HC:['fpe','evs','rg','om'],RE:['pb','dy','de','fpe'],EN:['eve','fpe','dy','om'],MA:['eve','fpe','om','dy'],CS:['fpe','eve','om','dy'],_:['fpe','eve','pb','dy']};
+const SW={BNK:'Banks are priced on book value against returns: P/B read with ROE, plus dividend yield.',IND:'Cyclical industrials: EV/EBITDA and forward P/E, with operating margin and yield for quality.',TEC:'Growth-led: EV/Sales and forward P/E against revenue growth and operating margin.',TEL:'Cash-yield sector: EV/EBITDA and dividend yield, with debt/equity for balance-sheet risk.',HLT:'Earnings quality and growth: forward P/E and EV/Sales against growth and margin.',FI:'Financials: P/B read with ROE, plus forward P/E and dividend yield.',IN:'Cyclical industrials: EV/EBITDA and forward P/E, with operating margin and yield.',TE:'Growth-led: EV/Sales and forward P/E against growth and margin.',TL:'Cash-yield sector: EV/EBITDA and dividend yield, with debt/equity for balance-sheet risk.',HC:'Earnings quality and growth: forward P/E and EV/Sales against growth and margin.',RE:'Property is valued on book value and balance sheet: P/B, dividend yield and debt/equity.',EN:'Commodity-driven: EV/EBITDA and forward P/E, with yield and margin.',MA:'Cyclical materials: EV/EBITDA and forward P/E, with margin and yield.',CS:'Consumer names: forward P/E and EV/EBITDA, with operating margin and yield.',_:'Default set for custom indexes: forward P/E, EV/EBITDA, P/B and dividend yield.'};
 const ok=(k,v)=>v!=null&&isFinite(v)&&!(MT[k][2]&&v<=0),fm=(k,v)=>v==null?'–':MT[k][1]=='x'?v.toFixed(1)+'x':(v*100).toFixed(1)+'%';
 function agg(ts,k,w,i){let sw=0,sv=0;for(const t of ts){const m=DATA.meta&&DATA.meta[t];if(!m)continue;const v=i==null?m[k]:((DATA.hist&&DATA.hist.v[t]&&DATA.hist.v[t][k])||[])[i];if(!ok(k,v))continue;const q=w=='cap'?(m.mcap||0):1;if(!q)continue;sw+=q;sv+=q*(MT[k][2]?1/v:v)}return sw?(MT[k][2]?sw/sv:sv/sw):null}
 function valuation(){const ms=SM[SEL]||SM._,ts=CFG[SEL].m,w=CFG[SEL].w,all=Object.keys(DATA.meta||{}),el=$('#val');
@@ -146,6 +151,79 @@ function valuation(){const ms=SM[SEL]||SM._,ts=CFG[SEL].m,w=CFG[SEL].w,all=Objec
  el.innerHTML=`<h4 style="margin:0;font:600 18px Oswald">Valuation · ${CFG[SEL].name}</h4><p class="sub">${SW[SEL]||SW._} Sector figures are ${w=='cap'?'market-cap weighted':'equal-weighted'}; multiples use the weighted harmonic mean (total price over total earnings). Compared with the median of all ${all.length} stocks in the data. Click a tile to see its history.</p>
  <div class="vt">${ms.map(k=>{const v=agg(ts,k,w),md=med(k);return`<div class="ck${k==HK?' sel':''}" tabindex="0" role="button" onclick="HK=HK=='${k}'?null:'${k}';valuation()" onkeydown="if(event.key=='Enter')this.click()"><i>${MT[k][0]}</i><b>${fm(k,v)}</b><br><span>${v!=null&&md?`universe ${fm(k,md)} · ${pc((v/md-1)*100)}`:'no data'}</span></div>`}).join('')}</div>
  ${HK&&ms.includes(HK)?vhist(HK,ts,w):''}<div class="sc"><table><tr><th>Stock</th><th>Mkt cap, bn</th>${ms.map(k=>`<th>${MT[k][0]}</th>`).join('')}</tr>${ts.map(t=>{const m=DATA.meta[t]||{};return`<tr><td>${t.replace('.ST','')}</td><td>${m.mcap?(m.mcap/1e9).toFixed(0):'–'}</td>${ms.map(k=>`<td>${fm(k,ok(k,m[k])?m[k]:null)}</td>`).join('')}</tr>`}).join('')}</table></div>`}
+// ---- filters: indexes and sectors build the consolidated indexes
+let OPEN=null;
+function uni(){return(DATA.uni||UNIJ).stocks.map(s=>{const a=s.split('|');return{t:a[0]+'.ST',n:a[1],x:a[2],s:a[3]}})}
+function rebuild(){const U=uni().filter(u=>DATA.prices[u.t]),SN=(DATA.uni||UNIJ).sectors,C={};
+ ST.sec.forEach(c=>{if(!SN[c])return;const o=ST.ov[c]||{add:[],rm:[]},b=U.filter(u=>u.s==c&&ST.idx.includes(u.x)).map(u=>u.t).filter(t=>!o.rm.includes(t));C[c]={name:SN[c],m:[...b,...o.add.filter(t=>!b.includes(t)&&DATA.prices[t])],w:ST.w[c]||'eq'}});
+ for(const c in ST.cu)C[c]={...ST.cu[c],w:ST.w[c]||'eq',custom:1};CFG=C;if(!C[SEL])SEL=Object.keys(C)[0]}
+function resetAll(){ST={idx:['L','M'],sec:Object.keys((DATA.uni||UNIJ).sectors),ov:{},cu:{},w:{}};SEL=null;save();render()}
+function dd(k){OPEN=OPEN==k?null:k;fbUI()}
+function tg(k,v){ST[k]=ST[k].includes(v)?ST[k].filter(x=>x!=v):[...ST[k],v];save();render()}
+function al(on){ST.sec=on?Object.keys((DATA.uni||UNIJ).sectors):[];save();render()}
+function fbUI(){const SN=(DATA.uni||UNIJ).sectors,U=uni().filter(u=>DATA.prices[u.t]),
+ pn=(k,it)=>`<div class='dp'>${it.map(([v,l,n])=>`<label><input type='checkbox' ${ST[k].includes(v)?'checked':''} onchange=tg('${k}','${v}')>${l}<span>${n}</span></label>`).join('')}${k=='sec'?`<div class='row' style='padding:4px 10px'><button onclick=al(1)>All</button><button onclick=al(0)>None</button></div>`:''}</div>`,
+ sel=U.filter(u=>ST.idx.includes(u.x)&&ST.sec.includes(u.s)).length;
+ $('#fb').innerHTML=`<div class='dd'><button onclick=dd('idx')>Index <b>${ST.idx.length}</b> ▾</button>${OPEN=='idx'?pn('idx',[['L','Stockholm Large Cap'],['M','Stockholm Mid Cap']].map(([v,l])=>[v,l,U.filter(u=>u.x==v).length])):''}</div><div class='dd'><button onclick=dd('sec')>Sectors <b>${ST.sec.length}</b> ▾</button>${OPEN=='sec'?pn('sec',Object.entries(SN).map(([c,l])=>[c,l,U.filter(u=>u.s==c&&ST.idx.includes(u.x)).length])):''}</div><span class='mu' style='align-self:center'>${sel} stocks build the indexes below</span>`}
+document.addEventListener('click',e=>{if(OPEN&&!e.target.closest('.dd')){OPEN=null;fbUI()}});
+// ---- tabs: overview, news, key figures, analysts (consolidated over members)
+function tab(t){document.body.dataset.tab=t;tabsUI()}
+function tabsUI(){const T=document.body.dataset.tab;$('#tabs').innerHTML=[['spot','Spotlight'],['ov','Overview'],['nw','News'],['kf','Key figures'],['an','Analysts']].map(([k,l])=>`<button class='${k==T?'on':''}' onclick=tab('${k}')>${l}</button>`).join('')}
+function gb(S,ln,lb,H,C){C=C||['#52c08a','#a594f9'];const W=400,n=lb.length||1,all=S.flat().filter(v=>v!=null),mx=Math.max(0,...all),mn=Math.min(0,...all),Y=v=>6+(1-(v-mn)/((mx-mn)||1))*(H-26),bw=W/n,w=bw*.7/S.length;let g='';
+ S.forEach((s,j)=>s.forEach((v,i)=>{if(v!=null)g+=`<rect x='${i*bw+bw*.15+j*w}' y='${Math.min(Y(v),Y(0))}' width='${w-1}' height='${Math.abs(Y(v)-Y(0))||1}' rx='2' fill='${C[j]}'/>`}));
+ if(ln){const l=ln.filter(v=>v!=null);if(l.length){const a=Math.min(...l),b=Math.max(...l),LY=v=>10+(1-(v-a)/((b-a)||1))*(H-46);let p='';ln.forEach((v,i)=>{if(v!=null)p+=(p?'L':'M')+(i*bw+bw/2)+' '+LY(v)});g+=`<path d='${p}' fill='none' stroke='#f4a261' stroke-width='1.6'/>`}}
+ lb.forEach((l,i)=>g+=`<text x='${i*bw+bw/2-10}' y='${H-4}'>${l}</text>`);return`<svg viewBox='0 0 ${W} ${H}'>${g}</svg>`}
+const es=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function panes(){tabsUI();const ts=CFG[SEL].m,w=CFG[SEL].w,E=DATA.ext,nm=t=>t.replace('.ST','');
+ if(!E){['ov','nw','kf','an'].forEach(k=>$('#'+k).innerHTML='<p class="sub">No company data in the loaded file. Run the updated fetch_prices.py and reload.</p>');return}
+ const ex=t=>E[t]||{},wt=t=>w=='cap'?mc(t):1,tw=ts.reduce((s,t)=>s+wt(t),0)||1,day=d=>Math.ceil((new Date(d)-Date.now())/864e5),H=s=>`<h3 class='ph'>${s}</h3>`;
+ // overview
+ const up=ts.filter(t=>ex(t).nx&&day(ex(t).nx)>=0).map(t=>[t,ex(t).nx]).sort((a,b)=>a[1]<b[1]?-1:1),tc=ts.reduce((s,t)=>s+mc(t),0),M=v=>(v/1e6).toFixed(1)+' MSEK',
+ ins=ts.reduce((a,t)=>{const i=ex(t).ins||{};a.b+=i.b||0;a.s+=i.s||0;a.nb+=i.nb||0;a.ns+=i.ns||0;return a},{b:0,s:0,nb:0,ns:0});
+ $('#ov').innerHTML=`<div class='vt'><div><i>Direct yield (sector)</i><b>${fm('dy',agg(ts,'dy',w))}</b><br><span>${ts.filter(t=>ex(t).dv).length} of ${ts.length} stocks with a dividend</span></div><div><i>Next report</i><b>${up[0]?up[0][1]:'–'}</b><br><span>${up[0]?nm(up[0][0])+' · in '+day(up[0][1])+' days':''}</span></div><div><i>Reports in next 30 days</i><b>${up.filter(x=>day(x[1])<=30).length}</b><br><span>of ${ts.length} stocks</span></div><div><i>Total market cap</i><b>${(tc/1e9).toFixed(0)} bn</b><br><span>SEK</span></div></div>
+ ${H('About the index')}<p class='mu'>${es(CFG[SEL].name)}: ${ts.length} stocks, ${w=='cap'?'weighted by market cap':'equal-weighted'}. Largest by weight: ${[...ts].sort((a,b)=>wt(b)-wt(a)).slice(0,3).map(t=>nm(t)+' '+(wt(t)/tw*100).toFixed(0)+'%').join(', ')}.</p>
+ ${H('Reports and dividends')}<div class='sc'><table><tr><th>Stock</th><th>Next report</th><th>Days</th><th>Previous reports</th><th>Last dividend</th></tr>${[...ts].sort((a,b)=>(ex(a).nx||'9')<(ex(b).nx||'9')?-1:1).map(t=>{const e=ex(t);return`<tr><td>${nm(t)}</td><td>${e.nx||'–'}</td><td>${e.nx?day(e.nx):'–'}</td><td>${(e.rp||[]).slice(0,3).join(', ')||'–'}</td><td>${e.dv?e.dv.a.toFixed(2)+' SEK · '+e.dv.d:'–'}</td></tr>`}).join('')}</table></div>
+ ${H('Insider trading, last 12 months (all members)')}<div class='vt'><div><i>Buys · ${ins.nb}</i><b class='up'>+${M(ins.b)}</b></div><div><i>Sells · ${ins.ns}</i><b class='dn'>−${M(ins.s)}</b></div><div><i>Net change</i><b class='${ins.b>=ins.s?'up':'dn'}'>${M(ins.b-ins.s)}</b></div></div><p class='sub'>Yahoo covers Swedish insider trades poorly, so zeros usually mean missing data.</p>`;
+ // news
+ const nws=ts.flatMap(t=>(ex(t).nw||[]).map(x=>({...x,t}))).sort((a,b)=>(b.d||'')<(a.d||'')?-1:1).slice(0,30);
+ $('#nw').innerHTML=`<p class='sub'>Latest headlines across the ${ts.length} members. Forum activity isn’t available from the data source.</p>`+(nws.length?nws.map(x=>`<div class='nw'><span class='mu'>${es(x.d)} · <b style='color:var(--or)'>${nm(x.t)}</b> · ${es(x.p)}</span><br><a href='${/^https?:/.test(x.u)?es(x.u):'#'}' target='_blank' rel='noopener'>${es(x.h)}</a></div>`).join(''):'<p class="mu">No news in the data.</p>');
+ // key figures
+ const F=ts.map(t=>ex(t).fin).filter(Boolean),Ys=[...new Set(F.flatMap(f=>f.y))].sort().slice(-10),
+ sm=k=>Ys.map(y=>{let s=0,c=0;F.forEach(f=>{const v=(f[k]||[])[f.y.indexOf(y)];if(v!=null){s+=v;c++}});return c?s:null}),
+ rv=sm('rev'),ni=sm('ni'),oi=sm('oi'),eb=sm('eb'),as=sm('as'),li=sm('li'),eq=sm('eq'),nd=sm('nd'),dv=(a,b)=>a.map((v,i)=>v!=null&&b[i]?v/b[i]:null),bn=a=>a.map(v=>v==null?null:v/1e9),
+ hy=k=>Ys.map(y=>{let j=-1;(DATA.hist?DATA.hist.dates:[]).forEach((d,i)=>{if(d.slice(0,4)==y)j=i});return j<0?null:agg(ts,k,w,j)}),
+ fv=(t,v)=>v==null?'–':t=='n'?v.toFixed(1):t=='%'?(v*100).toFixed(1)+'%':v.toFixed(2),
+ TL=[['Profit, bn SEK',bn(ni),'n'],['Revenue, bn SEK',bn(rv),'n'],['ROE',dv(ni,eq),'%'],['Net debt/EBITDA',dv(nd,eb),'x'],['P/E',hy('pe'),'x'],['P/B',hy('pb'),'x'],['EV/EBITDA',hy('eve'),'x'],['EBIT margin',dv(oi,rv),'%'],['Dividend yield',hy('dy'),'%']];
+ $('#kf').innerHTML=Ys.length?`<div class='two'><div>${H('Income statement')}${gb([bn(rv),bn(ni)],dv(ni,rv),Ys,200)}<p class='sub'><span style='color:#52c08a'>■ Revenue</span> <span style='color:#a594f9'>■ Profit</span> <span style='color:#f4a261'>● Profit margin</span></p></div><div>${H('Balance sheet')}${gb([bn(as),bn(li)],dv(li,as),Ys,200)}<p class='sub'><span style='color:#52c08a'>■ Assets</span> <span style='color:#a594f9'>■ Liabilities</span> <span style='color:#f4a261'>● Debt ratio</span></p></div></div>
+ ${H('Key figures')}<p class='sub'>Sums or weighted averages across the members, one bar per year from annual reports. The figure shown is the latest year. Sums are in bn SEK.</p><div class='three'>${TL.map(([l,v,t])=>`<div><div class='mu'>${l}</div><b style='font:600 20px Oswald'>${fv(t,[...v].reverse().find(x=>x!=null))}</b>${gb([v],null,Ys,90,['#5b8def'])}</div>`).join('')}</div>`:'<p class="sub">No annual figures in the data yet.</p>';
+ // analysts
+ const R=['strongBuy','buy','hold','sell','strongSell'],RL=['Strong buy','Buy','Hold','Sell','Strong sell'],rc=R.map(k=>ts.reduce((s,t)=>s+((ex(t).rec||{})[k]||0),0)),rt=rc.reduce((a,b)=>a+b,0)||1,
+ pr=ts.map(t=>{const p=ex(t).pt;return p&&p.mean&&p.current?{t,c:p.current,m:p.mean,hi:p.high,lo:p.low,u:p.mean/p.current-1}:null}).filter(Boolean),uw=pr.reduce((s,x)=>s+wt(x.t),0)||1,mu=pr.reduce((s,x)=>s+wt(x.t)*x.u,0)/uw;
+ $('#an').innerHTML=`<div class='two'><div>${H('Recommendations')}${RL.map((l,i)=>`<div style='display:flex;gap:10px;align-items:center;margin:8px 0'><span style='width:90px'>${l}</span><div style='flex:1;height:6px;background:#10202a;border-radius:3px'><div style='width:${rc[i]/rt*100}%;height:6px;background:#3ddc97;border-radius:3px'></div></div><span style='width:40px;text-align:right'>${rc[i]}</span></div>`).join('')}<p class='sub'>${rc.reduce((a,b)=>a+b,0)} ratings summed across members.</p></div>
+ <div>${H('Price targets')}<div class='vt'><div><i>Implied upside to mean target</i><b class='${cl(mu)}'>${pr.length?pc(mu*100):'–'}</b><br><span>${w=='cap'?'cap-weighted':'equal-weighted'}</span></div><div><i>Range across stocks</i><b style='font-size:18px'>${pr.length?pc(Math.min(...pr.map(x=>x.u))*100)+' to '+pc(Math.max(...pr.map(x=>x.u))*100):'–'}</b></div></div></div></div>
+ <div class='sc'><table><tr><th>Stock</th><th>Price</th><th>Target low</th><th>Target mean</th><th>Target high</th><th>Upside</th></tr>${pr.map(x=>`<tr><td>${nm(x.t)}</td><td>${x.c.toFixed(1)}</td><td>${x.lo?x.lo.toFixed(1):'–'}</td><td>${x.m.toFixed(1)}</td><td>${x.hi?x.hi.toFixed(1):'–'}</td><td class='${cl(x.u)}'>${pc(x.u*100)}</td></tr>`).join('')}</table></div>`}
+// ---- quarterly results vs expectations
+const qk=d=>{const y=+d.slice(0,4),m=+d.slice(5,7);return m<=3?[y-1,4]:m<=6?[y,1]:m<=9?[y,2]:[y,3]};
+function qdata(ts,f){const E=DATA.ext||{},Q={};ts.forEach(t=>{((E[t]||{})[f]||[]).forEach(x=>{if(x.sp==null)return;const[y,q]=qk(x.d),k=y+'Q'+q;(Q[k]=Q[k]||{y,q,r:[]}).r.push({d:x.d,sp:x.sp})})});
+ return Object.values(Q).map(o=>{const s=o.r.map(x=>x.sp).sort((a,b)=>a-b),ds=o.r.map(x=>x.d).sort();return{...o,n:s.length,b:s.filter(v=>v>0).length,md:s[s.length>>1],date:ds[ds.length>>1]}})}
+function qm(ds,X,y){let g='';qdata(CFG[SEL].m,'eq').forEach(o=>{const i=ds.findIndex(d=>d>=o.date);if(i<0||o.date>ds[ds.length-1])return;const r=o.b/o.n,c=r>=.6?'#3ddc97':r<=.4?'#ff6b6b':'#8393ad';g+=`<g><circle cx='${X(i)}' cy='${y}' r='4.5' fill='${c}'/><text x='${X(i)-8}' y='${y-8}'>Q${o.q}</text><title>Q${o.q} ${o.y}: ${o.b} of ${o.n} beat EPS expectations, median surprise ${pc(o.md)}</title></g>`});return g}
+function qgrid(){const ts=CFG[SEL].m;if(!DATA.ext)return'';
+ const cell=o=>{if(!o)return`<td style='background:#171f30'></td>`;const r=o.b/o.n,a=(.15+Math.min(Math.abs(r-.5)*1.4,.65)).toFixed(2);return`<td style='background:rgba(${r>=.5?'61,220,151':'255,107,107'},${a})' title='median surprise ${pc(o.md)}'>${o.b}/${o.n}<br><span style='font-weight:400;opacity:.85'>${pc(o.md)}</span></td>`};
+ const blk=(f,ttl)=>{const Q=qdata(ts,f);if(!Q.length)return`<p class='sub' style='margin:18px 0 4px'>${ttl}</p><p class='mu' style='font-size:13px'>No data yet. ${f=='rq'?'Revenue expectations are recorded on each daily run and compared with the actual once a stock reports, so this fills in during the next report season.':'Run the updated fetch_prices.py.'}</p>`;
+  const ys=[...new Set(Q.map(o=>o.y))].sort().reverse();
+  return`<p class='sub' style='margin:18px 0 4px'>${ttl}</p><div class='mr'><table style='min-width:420px'><tr><th></th>${[1,2,3,4].map(q=>`<th>Q${q}</th>`).join('')}<th>Year</th></tr>${ys.map(y=>{const r=Q.filter(o=>o.y==y),b=r.reduce((s,o)=>s+o.b,0),n=r.reduce((s,o)=>s+o.n,0);return`<tr><th>${y}</th>${[1,2,3,4].map(q=>cell(Q.find(o=>o.y==y&&o.q==q))).join('')}<td class='${b/n>=.5?'up':'dn'}'>${b}/${n}</td></tr>`}).join('')}</table></div>`};
+ return blk('eq','EPS VS EXPECTATIONS · STOCKS THAT BEAT, WITH MEDIAN SURPRISE')+blk('rq','REVENUE VS EXPECTATIONS · STOCKS THAT BEAT, WITH MEDIAN SURPRISE')+`<p class='sub'>Each stock counts once per quarter, by report date (January to March reports are Q4 of the prior year). Dots on the price chart mark the median report date: green when most stocks beat, red when most missed.</p>`}
+// ---- monthly returns
+function mret(c,ds){const me=[];ds.forEach((d,i)=>{const k=d.slice(0,7);if(me.length&&me[me.length-1][0]==k)me[me.length-1][1]=c[i];else me.push([k,c[i]])});
+ const Y={};for(let i=1;i<me.length;i++){const[y,m]=me[i][0].split('-');(Y[y]=Y[y]||{})[+m-1]=me[i][1]/me[i-1][1]-1}
+ const ys=Object.keys(Y).sort().reverse(),M='Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' '),f=v=>(v>=0?'+':'')+(v*100).toFixed(1)+'%',
+ bg=v=>v==null?'#171f30':`rgba(${v>=0?'61,220,151':'255,107,107'},${(.15+Math.min(Math.abs(v)*3.5,.7)).toFixed(2)})`,
+ tc=v=>`<td class="${v>=0?'up':'dn'}">${f(v)}</td>`;
+ const yr=y=>{const a=Object.values(Y[y]);return a.reduce((p,v)=>p*(1+v),1)-1},
+ avg=m=>{const a=ys.map(y=>Y[y][m]).filter(v=>v!=null);return a.length?a.reduce((p,v)=>p+v)/a.length:null};
+ return`<p class="sub" style="margin:18px 0 4px">MONTHLY RETURNS · % · FULL HISTORY OF THE INDEX</p><div class="mr"><table><tr><th></th>${M.map(m=>`<th>${m}</th>`).join('')}<th>Year</th></tr>
+ ${ys.map(y=>`<tr><th>${y}</th>${M.map((_,m)=>{const v=Y[y][m];return`<td style="background:${bg(v)}">${v==null?'':(v*100).toFixed(1)+'%'}</td>`}).join('')}${tc(yr(y))}</tr>`).join('')}
+ <tr><th>Avg</th>${M.map((_,m)=>{const v=avg(m);return v==null?'<td></td>':tc(v)}).join('')}<td></td></tr></table></div>`}
 // ---- time range and valuation history
 let RNG={p:'auto',f:'',t:''},WIN=[],HK=null;
 function rangeIx(ds,L){let s=Math.max(0,L+1-(WK?156:252)),e=L;if(RNG.p!='auto'){let f=RNG.f,t=RNG.t||ds[L];if(RNG.p!='custom'){t=ds[L];if(RNG.p=='Max')f='';else{const d=new Date(ds[L]),n=+RNG.p.slice(0,-1);RNG.p.slice(-1)=='M'?d.setUTCMonth(d.getUTCMonth()-n):d.setUTCFullYear(d.getUTCFullYear()-n);f=d.toISOString().slice(0,10)}}
