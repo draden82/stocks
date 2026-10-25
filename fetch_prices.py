@@ -3,7 +3,7 @@ Usage: pip install yfinance pandas; python fetch_prices.py [config.json]
 Then open the page and use "Load price data" with the generated prices.json.
 Pass the JSON from "Show config JSON" as config.json to fetch your own constituents.
 """
-import json, os, sys
+import difflib, json, os, sys
 import pandas as pd
 import yfinance as yf
 
@@ -12,9 +12,57 @@ DEFAULT = ("SEB-A SHB-A SWED-A NDA-SE ATCO-A SAND VOLV-B ALFA EPI-A ABB ERIC-B H
 EXTRA = []          # add any tickers here, e.g. "VOLCAR-B.ST"
 BENCHMARK = "^OMX"  # OMXS30
 
+SECMAP = {"Energy": "EN", "Real Estate": "RE", "Financial Services": "FI", "Healthcare": "HC", "Industrials": "IN",
+          "Consumer Cyclical": "CS", "Consumer Defensive": "CS", "Basic Materials": "MA", "Technology": "TE", "Utilities": "IN"}
+
+def find_ticker(name):
+    """Look a company up on Yahoo and accept only a Stockholm (.ST) listing whose name is a close match."""
+    try:
+        qs = yf.Search(name, max_results=10).quotes
+    except Exception:
+        return None
+    best, score = None, 0.0
+    for q in qs:
+        sym = q.get("symbol", "")
+        nm = q.get("longname") or q.get("shortname") or ""
+        r = difflib.SequenceMatcher(None, name.lower(), nm.lower()).ratio()
+        if sym.endswith(".ST") and r > score:
+            best, score = sym, r
+    return best if score >= 0.5 else None
+
+def sector_of(t):
+    try:
+        i = yf.Ticker(t).info
+    except Exception:
+        return None
+    if i.get("sector") == "Communication Services":
+        return "TL" if "Telecom" in (i.get("industry") or "") else "CS"
+    return SECMAP.get(i.get("sector"))
+
+def resolve(entries, cache):
+    """Fill in '?' tickers/sectors. Earlier results are reused from the previous prices.json, so each lookup happens once."""
+    out, bad = [], []
+    for e in entries:
+        t, name, seg, sec = e.split("|")
+        c = cache.get(name)
+        if t == "?":
+            t = c[0] if c else find_ticker(name)
+            if not t:
+                bad.append(name)
+                continue
+        t = t.replace(".ST", "")
+        if sec == "?":
+            sec = c[1] if c else sector_of(t + ".ST")
+        out.append(f"{t}|{name}|{seg}|{sec or 'IN'}")
+    return out, bad
+
 tickers = {t + ".ST" for t in DEFAULT} | set(EXTRA)
 UNI = json.load(open("universe.json")) if os.path.exists("universe.json") else None
 if UNI:  # the stock universe (index, sector) that drives the page's filters
+    prev = json.load(open("prices.json")).get("uni") if os.path.exists("prices.json") else None
+    cache = {x.split("|")[1]: (x.split("|")[0], x.split("|")[3]) for x in (prev or {}).get("stocks", [])}
+    UNI["stocks"], unresolved = resolve(UNI["stocks"], cache)
+    print(f"Universe: {len(UNI['stocks'])} stocks resolved, {len(unresolved)} not found on Yahoo: {unresolved}")
     tickers |= {x.split("|")[0] + ".ST" for x in UNI["stocks"]}
 if len(sys.argv) > 1:
     cfg = json.load(open(sys.argv[1]))
